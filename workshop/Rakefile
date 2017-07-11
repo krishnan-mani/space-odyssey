@@ -104,10 +104,12 @@ def create_account(account_name, base_email, group)
   raise "base email not provided" if base_email.nil?
   raise "group not provided" if group.nil?
 
+  lowercase_account_name = account_name.downcase
+
   org_client = Aws::Organizations::Client.new
-  email = "#{base_email.split('@').first}+#{group}-#{account_name}@#{base_email.split('@').last}"
+  email = "#{base_email.split('@').first}+#{group}-#{lowercase_account_name}@#{base_email.split('@').last}"
   begin
-    create_account_response = org_client.create_account(account_name: account_name, email: email)
+    create_account_response = org_client.create_account(account_name: lowercase_account_name, email: email)
     create_account_response.create_account_status
   rescue Aws::Organizations::Errors::ConstraintViolationException => ex
     abort("Error: #{ex.message}")
@@ -156,6 +158,7 @@ desc "create organizational unit"
 task :create_organizational_unit, [:name] do |t, args|
   name = args.name
   raise "Name not specified" if name.nil?
+  lowercase_name = name.downcase
 
   org_client = Aws::Organizations::Client.new
   org_response = org_client.describe_organization
@@ -164,7 +167,7 @@ task :create_organizational_unit, [:name] do |t, args|
   parents_response = org_client.list_parents(child_id: master_account_id)
   root_ou_id = parents_response.parents.first.id
 
-  create_ou_response = org_client.create_organizational_unit(parent_id: root_ou_id, name: name)
+  create_ou_response = org_client.create_organizational_unit(parent_id: root_ou_id, name: lowercase_name)
   org_unit = create_ou_response.organizational_unit
   puts "Created organizational unit named #{org_unit.name} with id #{org_unit.id}"
 end
