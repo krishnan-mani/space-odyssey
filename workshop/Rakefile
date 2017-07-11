@@ -196,13 +196,6 @@ task :add_account_to_ou, [:account_name, :ou_name] do |t, args|
   org_client.move_account(account_id: account_id, destination_parent_id: ou_id, source_parent_id: account_parent_ou_id)
 end
 
-desc "describe org status"
-task :describe_org_status do
-
-  #TODO: to be implemented
-  puts "[TBD]"
-end
-
 def upload_file(file, bucket, key_alias, s3)
   file_obj = s3.bucket(bucket).object(file)
   upload_status = file_obj.upload_file(file, server_side_encryption: 'aws:kms', ssekms_key_id: key_alias)
@@ -336,49 +329,6 @@ task :process_manifest, [:artifacts_bucket, :dry_run] do |t, args|
 
 end
 
-desc "deploy template"
-task :deploy_template, [:template_name, :dry_run] do |t, args|
-
-  #TODO: implement create or update
-  #TODO: implement re-create based on flag
-
-  template_name = args.template_name
-  raise "No template name specified" if template_name.nil?
-
-  dry_run = args.dry_run || false
-
-  base_path = File.join(['..', 'evolution', 'bootstrap', 'templates'])
-  puts deploy_template(template_name, base_path, dry_run)
-end
-
-def deploy_template(template_name, base_path, dry_run = false)
-
-  metadata_path = File.join(base_path, template_name, 'metadata.yml')
-  metadata = YAML.load(IO.read(metadata_path))
-
-  region = metadata["region"]
-  stack_name = metadata["name"]
-  parameters = metadata["Parameters"]
-  capabilities = metadata["capabilities"]
-  template_path = File.join(base_path, template_name, 'template.json')
-  template_body = IO.read(template_path)
-
-  cf = Aws::CloudFormation::Client.new(region: region)
-  create_stack_parameters = {
-      stack_name: stack_name,
-      template_body: template_body
-  }
-  create_stack_parameters[:parameters] = parameters unless parameters.nil?
-  create_stack_parameters[:capabilities] unless capabilities.nil?
-
-  if dry_run
-    "CloudFormation stack #{create_stack_parameters[:stack_name]} will be created in #{region}"
-  else
-    create_stack_response = cf.create_stack(create_stack_parameters)
-    create_stack_response.stack_id
-  end
-end
-
 desc "Package and deploy SAM to CloudFormation"
 task :deploy_SAM, [:template_name, :context, :artifacts_bucket, :dry_run] do |t, args|
   template_name = args.template_name
@@ -421,8 +371,6 @@ def deploy_sam(template_name, base_path, metadata_path, artifacts_bucket, dry_ru
   unless dry_run
     package_succeeded = ($?.exitstatus == 0)
   end
-
-  #TODO: abort if package or deploy commands fail
 
   deploy_command = "aws cloudformation --region #{region} deploy --template-file working-folder/output-template.yml --stack-name #{stack_name}"
 
@@ -544,112 +492,5 @@ task :get_cf_stack_status, [:stack_name, :account_name] do |t, args|
     puts "#{account_name}, #{stack_name}: #{status}"
   rescue => ex
     puts "#{account_name}, #{ex.message}"
-  end
-end
-
-desc "provision publishing account"
-task :provision_publishing_account, [:token] do |t, args|
-  token = args.token or raise 'token not supplied'
-  puts provision_publishing_account(token)
-end
-
-def provision_publishing_account(token)
-  org_client = Aws::Organizations::Client.new
-  accounts = org_client.list_accounts
-  publishing_account = accounts.accounts.select { |account| account.name.eql?('publishing') }.first
-  raise "Unable to locate publishing account" if publishing_account.nil?
-  publishing_account_id = publishing_account.id
-
-  provison_iam(publishing_account_id)
-  provision_service_catalog(publishing_account_id, token)
-end
-
-def provison_iam(publishing_account_id)
-  role_arn = "arn:aws:iam::#{publishing_account_id}:role/OrganizationAccountAccessRole"
-  role_session_name = "provision-publishing-account"
-  role_credentials = Aws::AssumeRoleCredentials.new(role_arn: role_arn, role_session_name: role_session_name)
-
-  iam = Aws::IAM::Client.new(credentials: role_credentials)
-
-  # Creating an administrator for Service Catalog
-  admin_user = 'sc-admin'
-  admin_group = 'sc-admin-group'
-  admin_role = 'sc-admin-role'
-
-  iam.create_user({user_name: admin_user})
-  iam.create_group({group_name: admin_group})
-  iam.create_role({
-                      role_name: admin_role,
-                      assume_role_policy_document: "{\"Version\": \"2012-10-17\",\"Statement\": [{\"Effect\": \"Allow\",\"Principal\": {\"Service\": \"servicecatalog.amazonaws.com\"},\"Action\": \"sts:AssumeRole\"}]}"
-                  })
-
-  end_user = 'sc-end-user'
-  end_user_group = 'sc-end-user-group'
-  end_user_role = 'sc-end-user-role'
-
-  # Creating an end-user for Service Catalog
-  iam.create_user({user_name: end_user})
-  iam.create_group({group_name: end_user_group})
-  iam.create_role({
-                      role_name: end_user_role,
-                      assume_role_policy_document: "{\"Version\": \"2012-10-17\",\"Statement\": [{\"Effect\": \"Allow\",\"Principal\": {\"Service\": \"servicecatalog.amazonaws.com\"},\"Action\": \"sts:AssumeRole\"}]}"
-                  })
-
-  # administrator policy
-  iam.attach_role_policy({
-                             policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogAdminFullAccess",
-                             role_name: admin_role
-                         })
-  iam.attach_group_policy({
-                              group_name: admin_group,
-                              policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogAdminFullAccess"
-                          })
-  iam.add_user_to_group({
-                            group_name: admin_group,
-                            user_name: admin_user
-                        })
-
-  # end-user policy
-  iam.attach_role_policy({
-                             policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogEndUserFullAccess",
-                             role_name: end_user_role
-                         })
-  iam.attach_group_policy({
-                              group_name: end_user_group,
-                              policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogEndUserFullAccess"
-                          })
-  iam.add_user_to_group({
-                            group_name: end_user_group,
-                            user_name: end_user
-                        })
-
-end
-
-def provision_service_catalog(publishing_account_id, token)
-  role_arn = "arn:aws:iam::#{publishing_account_id}:role/OrganizationAccountAccessRole"
-  role_session_name = "provision-publishing-account"
-  role_credentials = Aws::AssumeRoleCredentials.new(role_arn: role_arn, role_session_name: role_session_name)
-
-  servicecatalog = Aws::ServiceCatalog::Client.new(credentials: role_credentials)
-  portfolio = servicecatalog.create_portfolio({
-                                                  display_name: "demo-portfolio",
-                                                  description: "demonstration portfolio",
-                                                  provider_name: "portfolio-provider",
-                                                  idempotency_token: token
-                                              })
-
-
-  org_client = Aws::Organizations::Client.new
-  accounts_list = org_client.list_accounts
-
-  #TODO: also exclude master account
-  control_accounts = %w(logging identity publishing)
-  functional_account_ids = (accounts_list.accounts.reject { |account| control_accounts.include?(account.name) }).collect { |account| account.id }
-
-  functional_account_ids.each do |account_id|
-    servicecatalog.create_portfolio_share({
-                                              portfolio_id: portfolio.portfolio_detail.id,
-                                              account_id: account_id
-                                          })
   end
 end
