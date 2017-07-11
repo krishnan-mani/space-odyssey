@@ -35,6 +35,7 @@ module 1: preparation and pre-requisites
 
 - Use any AWS account
 - provision a CloudFormation template for "essentials"
+- familiarize yourself with the automation
 - use "rake tasks" to implement the workshop
 
 module 2: organization, accounts, and organizational units
