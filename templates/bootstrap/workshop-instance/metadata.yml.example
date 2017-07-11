@@ -1,0 +1,6 @@
+name: workshop-instance
+region: us-east-1
+capabilities:
+  - CAPABILITY_IAM
+Parameters:
+  KeyName: [REPLACE-ME]
