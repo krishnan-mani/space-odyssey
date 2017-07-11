@@ -44,7 +44,7 @@ ruby-2.4.0@workshop
 $ gem install bundler
 $ bundle install --binstubs
 $ cd workshop
-$ rake display_accounts
+workshop $ rake display_accounts
 # displays organization and accounts information
 
 ```
@@ -53,6 +53,8 @@ $ rake display_accounts
 
 ```
 workshop $ rake setup
+# displays bucket name
+
 ```
 
 - Create a manifest to provision the function for ```CodeBuild-role```
@@ -67,6 +69,13 @@ CodeBuild-role: CREATE_COMPLETE
 ```
 
 - Provision the CloudFormation stack for ```essentials```
+
+```
+essentials $ aws cloudformation create-stack \
+                    --stack-name essentials \
+                    --template-body file://template.json
+
+```
 
 - Configure the git remote for the repository in CodeCommit and push changes to the ```master``` branch
 
