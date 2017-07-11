@@ -3,6 +3,14 @@ require 'yaml'
 
 require_relative 'lib/models'
 
+desc "create organization"
+task :create_organization do
+  begin
+    MyOrganization.new.create_organization
+  rescue Aws::Organizations::Errors::AlreadyInOrganizationException => ex
+    abort("error: #{ex.message}")
+  end
+end
 
 desc "setup"
 task :setup do
@@ -37,7 +45,7 @@ task :display_accounts do
 
   begin
     org_response = org_client.describe_organization
-  rescue => ex
+  rescue Aws::Organizations::Errors::AWSOrganizationsNotInUseException => ex
     abort("Error: #{ex.message}")
   end
 

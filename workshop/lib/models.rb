@@ -10,6 +10,11 @@ class MyOrganization
     @config[:region] = REGION_VIRGINIA if config[:region].nil?
   end
 
+  def create_organization
+    org_client = Aws::Organizations::Client.new(@config)
+    org_client.create_organization
+  end
+
   def get_organization_id
     org_client = Aws::Organizations::Client.new(@config)
     org_client.describe_organization.organization.id
