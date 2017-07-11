@@ -79,3 +79,19 @@ module 5: identity account (illustrated with Cross Account Manager)
 - provision the Cross Account Manager component in all of the other accounts
 - assign groups in Active Directory to roles
 - user access to AWS accounts for the assigned role via federation to the console
+
+Not illustrated here:
+=== 
+ 
+- Service Control Policies to restrict actions on AWS accounts
+- Using update policy with CloudFormation stacks 
+- Trigger provisioning actions using an alternative mechanism
+- Federation using alternatives to Active Directory
+- "publishing account" best practice with Service Catalog and launch constraints
+
+Known issues:
+===
+
+- Account name not returned from list-accounts for some time after creation
+- Cross Account Manager does not process accounts when an account number begins with zero
+- Exceeded allowed number of accounts
