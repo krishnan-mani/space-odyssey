@@ -48,3 +48,32 @@ $ rake display_accounts
 # displays organization and accounts information
 
 ```
+
+- Create the artifacts bucket
+
+```
+workshop $ rake setup
+```
+
+- Create a manifest to provision the function for ```CodeBuild-role```
+
+```
+workshop $ cp manifest.yml.step-1.example manifest.yml
+workshop $ rake process_manifest[true] # dry-run
+workshop $ rake process_manifest
+workshop $ rake describe_manifest_status
+CodeBuild-role: CREATE_COMPLETE
+
+```
+
+- Provision the CloudFormation stack for ```essentials```
+
+- Configure the git remote for the repository in CodeCommit and push changes to the ```master``` branch
+
+```
+$ git config --global credential.helper '!aws codecommit credential-helper $@'
+$ git config --global credential.UseHttpPath true
+$ git remote add cc https://git-codecommit.us-east-1.amazonaws.com/v1/repos/space-odyssey
+$ git push cc master
+
+```
