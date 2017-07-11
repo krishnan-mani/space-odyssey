@@ -1,0 +1,79 @@
+{
+  "Parameters": {
+    "RepositoryCloneUrl": {
+      "Description": "git clone URL",
+      "Type": "String",
+      "Default": "https://github.com/krishnan-mani/space-odyssey.git"
+    },
+    "KeyName": {
+      "Description": "Key name for SSH public key to logon to test nodes",
+      "Type": "AWS::EC2::KeyPair::KeyName"
+    }
+  },
+  "Resources": {
+    "workshopInstance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "InstanceType": "t2.micro",
+        "ImageId": "ami-a4c7edb2",
+        "KeyName": {
+          "Ref": "KeyName"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "workshop"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash -xe \n",
+                "yum install -y gcc openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel ruby-devel gcc-c++ jq git \n",
+                "gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB \n",
+                "curl -sSL https://get.rvm.io | bash -s stable \n",
+                "usermod -a -G rvm ec2-user \n",
+                "source /etc/profile.d/rvm.sh \n",
+                "rvm install 2.4 \n",
+                {
+                  "Fn::Join": [
+                    " ",
+                    [
+                      "git clone",
+                      {
+                        "Ref": "RepositoryCloneUrl"
+                      },
+                      "/opt/space-odyssey \n"
+                    ]
+                  ]
+                },
+                "chown -R ec2-user:ec2-user /opt/space-odyssey \n",
+                {
+                  "Fn::Join": [
+                    " ",
+                    [
+                      "/opt/aws/bin/cfn-init",
+                      "--region",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "-s",
+                      {
+                        "Ref": "AWS::StackId"
+                      },
+                      "-r",
+                      "workshopInstance",
+                      "-v"
+                    ]
+                  ]
+                }
+              ]
+            ]
+          }
+        }
+      }
+    }
+  }
+}
