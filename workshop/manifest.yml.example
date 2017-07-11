@@ -1,6 +1,6 @@
 functions:
   -
-    create-CodeBuild-role:
+    CodeBuild-role:
     trigger-builds-listener:
     create-CloudTrail-bucket-policy:
     fan-out-trigger-build:
