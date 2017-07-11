@@ -299,11 +299,12 @@ task :describe_manifest_status do |t, args|
 end
 
 desc "process manifest"
-task :process_manifest, [:artifacts_bucket, :dry_run] do |t, args|
+task :process_manifest, [:dry_run] do |t, args|
 
   #TODO: implement fail-fast
 
-  artifacts_bucket = args.artifacts_bucket
+  artifacts_bucket = MyOrganization.new.get_artifacts_bucket_name
+  raise "Artifacts bucket not available" if artifacts_bucket.nil?
   dry_run = args.dry_run || false
 
   manifest = YAML.load(IO.read('manifest.yml'))
