@@ -130,7 +130,7 @@ class AWSOrganization
 
   def to_s
     [
-        "Organization: #{id} with master account #{master_account_id}",
+        "Organization: #{id} with master account #{master_account_id} and master account email #{master_account_email}",
         "organizational units:",
         ous.collect(&:to_s),
     ].flatten.join("\n")
