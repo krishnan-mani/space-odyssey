@@ -1,0 +1,4 @@
+name: vijay-user
+region: us-east-1
+capabilities:
+  - CAPABILITY_IAM

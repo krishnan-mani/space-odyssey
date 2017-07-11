@@ -1,0 +1,4 @@
+name: CodeBuild-role
+region: us-east-1
+capabilities:
+  - CAPABILITY_IAM

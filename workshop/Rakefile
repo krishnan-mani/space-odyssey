@@ -1,0 +1,637 @@
+require 'aws-sdk'
+require 'yaml'
+
+require_relative 'lib/models'
+
+
+desc "setup"
+task :setup do
+  my_org = MyOrganization.new
+  my_org.create_artifacts_bucket
+  puts "artifacts bucket: #{my_org.get_artifacts_bucket_name}"
+end
+
+desc "generate an accounts file"
+task :generate_accounts_file do
+
+  #TODO: group accounts by OU
+
+  org = Aws::Organizations::Client.new
+  accounts = org.list_accounts
+
+  accounts_list = accounts.accounts.reject { |account| ((account.name.eql?("identity")) or (account.id.start_with?("0"))) }.collect { |account|
+    account_name = account.name
+    account_id = account.id
+    account_email = account.email
+    CAMAccount.new(account_name, account_id, account_email)
+  }
+
+  FileUtils.makedirs(['account'])
+  account_file = 'account/account.yaml'
+  File.write(account_file, AccountsFormatter.out(accounts_list))
+end
+
+desc "display accounts"
+task :display_accounts do
+  org_client = Aws::Organizations::Client.new
+  org_response = org_client.describe_organization
+  organization = org_response.organization
+  organization_id = organization.id
+  master_account_id = organization.master_account_id
+  master_account_email = organization.master_account_email
+
+  root_ou_response = org_client.list_parents(child_id: master_account_id)
+  root_ou_id = root_ou_response.parents.first.id
+
+  children_ou_response = org_client.list_children(parent_id: root_ou_id, child_type: 'ORGANIZATIONAL_UNIT')
+  children_ou_ids = children_ou_response.children.collect(&:id)
+
+  first_level_ous = []
+  children_ou_ids.each do |ou_id|
+    describe_ou_response = org_client.describe_organizational_unit(organizational_unit_id: ou_id)
+    ou_name = describe_ou_response.organizational_unit.name
+    ou_accounts_response = org_client.list_children(parent_id: ou_id, child_type: 'ACCOUNT')
+    ou_account_ids = ou_accounts_response.children.collect(&:id)
+    first_level_ous << AWSOrganizationalUnit.new(ou_id, ou_name, root_ou_id, ou_account_ids)
+  end
+
+  root_ou_account_ids_response = org_client.list_children(parent_id: root_ou_id, child_type: 'ACCOUNT')
+  root_ou_account_ids = root_ou_account_ids_response.children.collect(&:id)
+  root_ou = AWSOrganizationalUnit.new(root_ou_id, 'ROOT', nil, root_ou_account_ids)
+
+  all_ous = [root_ou, first_level_ous].flatten
+
+  accounts_response = org_client.list_accounts
+  accounts = accounts_response.accounts
+
+  all_ous.each do |ou|
+    (accounts.select { |account| ou.account_ids.include?(account.id) }).each { |account| ou.add_account(AWSAccount.new(account.id, account.email, account.name)) }
+  end
+
+  my_organization = AWSOrganization.new(organization_id, master_account_id, master_account_email, all_ous)
+  puts OrgFormatter.out(my_organization)
+end
+
+desc "create control accounts (logging, identity, publishing)"
+task :create_control_accounts, [:base_email, :group] do |t, args|
+
+  #TODO: check for existing accounts by name
+
+  base_email = args.base_email
+  group = args.group
+  %w(logging identity publishing).each do |account_name|
+    status = create_account(account_name, base_email, group)
+    puts "Create account requested for name #{status.account_name} with status id #{status.id}"
+  end
+end
+
+def create_account(account_name, base_email, group)
+  raise "account name not provided" if account_name.nil?
+  raise "base email not provided" if base_email.nil?
+  raise "group not provided" if group.nil?
+
+  org_client = Aws::Organizations::Client.new
+  email = "#{base_email.split('@').first}+#{group}-#{account_name}@#{base_email.split('@').last}"
+  create_account_response = org_client.create_account(account_name: account_name, email: email)
+  create_account_response.create_account_status
+end
+
+desc "create account"
+task :create_account, [:account_name, :base_email, :group] do |t, args|
+
+  #TODO: check for existing accounts by name
+
+  account_name = args.account_name
+  base_email = args.base_email
+  group = args.group
+
+  status = create_account(account_name, base_email, group)
+  puts "Create account requested for name #{status.account_name} with status id #{status.id}"
+end
+
+desc "invite account"
+task :invite_account do
+
+  #TODO: to be implemented
+  puts "[TBD]"
+end
+
+desc 'Obtain the console URL to navigate to account'
+task :navigate, [:account_name, :role_name] do |t, args|
+  account_name = args.account_name
+  raise "No account name provided" if account_name.nil?
+  role_name = args.role_name || "OrganizationAccountAccessRole"
+
+  org = Aws::Organizations::Client.new
+  accounts = org.list_accounts.accounts
+  account_info = (Hash[accounts.collect { |account| [account.name, account.id] }])
+  account_id = account_info[account_name]
+  raise "Account not found for name #{account_name}" if account_id.nil?
+
+  puts "https://signin.aws.amazon.com/switchrole?account=#{account_id}&roleName=#{role_name}&displayName=#{account_name}"
+
+  # role_arn = "arn:aws:iam::#{account_id}:role/#{role_name}"
+  # puts "Role ARN: #{role_arn}"
+end
+
+desc "create organizational unit"
+task :create_organizational_unit, [:name] do |t, args|
+  name = args.name
+  raise "Name not specified" if name.nil?
+
+  org_client = Aws::Organizations::Client.new
+  org_response = org_client.describe_organization
+  master_account_id = org_response.organization.master_account_id
+
+  parents_response = org_client.list_parents(child_id: master_account_id)
+  root_ou_id = parents_response.parents.first.id
+
+  create_ou_response = org_client.create_organizational_unit(parent_id: root_ou_id, name: name)
+  org_unit = create_ou_response.organizational_unit
+  puts "Created organizational unit named #{org_unit.name} with id #{org_unit.id}"
+end
+
+desc "add account to organizational unit"
+task :add_account_to_ou, [:account_name, :ou_name] do |t, args|
+
+  account_name = args.account_name or raise "Account name not specified"
+  ou_name = args.ou_name or raise "Organizational unit name not specified"
+
+  org_client = Aws::Organizations::Client.new
+  master_account_id = org_client.describe_organization.organization.master_account_id
+  root_ou_id_response = org_client.list_parents(child_id: master_account_id)
+  root_out_id = root_ou_id_response.parents.first.id
+  raise "Root OU Id not found" if root_out_id.nil?
+
+  account = (org_client.list_accounts.accounts.select { |account| account.name.eql?(account_name) }).first
+  account_id = account.id
+  raise "Account Id not found for account named #{account_name}" if account_id.nil?
+
+  account_parent_response = org_client.list_parents(child_id: account_id)
+  account_parent_ou_id = account_parent_response.parents.first.id
+
+  ou_ids_response = org_client.list_organizational_units_for_parent(parent_id: root_out_id)
+  ou = ou_ids_response.organizational_units.select { |ou| ou.name.eql?(ou_name) }.first
+  raise "Organizational unit not found" if ou.nil?
+  ou_id = ou.id
+
+  org_client.move_account(account_id: account_id, destination_parent_id: ou_id, source_parent_id: account_parent_ou_id)
+end
+
+desc "describe org status"
+task :describe_org_status do
+
+  #TODO: to be implemented
+  puts "[TBD]"
+end
+
+def upload_file(file, bucket, key_alias, s3)
+  file_obj = s3.bucket(bucket).object(file)
+  upload_status = file_obj.upload_file(file, server_side_encryption: 'aws:kms', ssekms_key_id: key_alias)
+  if upload_status
+    puts "uploaded file #{file}"
+  else
+    raise "Upload failed for #{file}" unless upload_status
+  end
+end
+
+def copy_files_locally(files_location, policy_files, role_prefix, custom_policy_prefix)
+  FileUtils.makedirs([role_prefix, custom_policy_prefix])
+  FileUtils.copy(File.join(files_location, 'roles-assignment.yaml'), File.join(role_prefix, 'role.yaml'))
+  policy_files.each { |policy_file| FileUtils.copy(File.join(files_location, 'policies', policy_file), File.join(custom_policy_prefix, policy_file)) }
+end
+
+def verify_policy_files_exist(policies, files_location)
+  policies.each do |policy_file|
+    policy_file_location = File.join(files_location, 'policies', policy_file)
+    raise "File #{policy_file} does not exist at #{policy_file_location}" unless FileTest.exist?(policy_file_location)
+  end
+end
+
+desc "upload account files for Cross Account Manager"
+task :upload_account_files do |t, args|
+  files_location = File.join('..', 'iam', 'roles')
+  roles = Role::load_roles(File.join(files_location, 'roles-assignment.yaml'))
+  policy_files = roles.collect(&:policy_file).uniq
+  verify_policy_files_exist(policy_files, files_location)
+
+  role_prefix, custom_policy_prefix = 'role', 'custom_policy'
+  copy_files_locally(files_location, policy_files, role_prefix, custom_policy_prefix)
+
+  org = Aws::Organizations::Client.new
+  organization_id = org.describe_organization.organization.id
+  raise "organization Id not found" if organization_id.nil?
+  bucket = "cam-config-#{organization_id}"
+  key_alias = 'alias/CrossAccountManager-Key'
+
+  accounts = org.list_accounts
+  identity_account = accounts.accounts.select { |account| account.name.eql?('identity') }.first
+  identity_account_id = identity_account.id
+  raise "identity account not located" if identity_account_id.nil?
+
+  role_arn = "arn:aws:iam::#{identity_account_id}:role/OrganizationAccountAccessRole"
+  role_credentials = Aws::AssumeRoleCredentials.new(
+      role_arn: role_arn,
+      role_session_name: "upload-account-file"
+  )
+  s3 = Aws::S3::Resource.new(credentials: role_credentials)
+
+  account_file = 'account/account.yaml'
+  upload_file(account_file, bucket, key_alias, s3)
+
+  role_file = File.join(role_prefix, 'role.yaml')
+  upload_file(role_file, bucket, key_alias, s3)
+
+  policy_files.each do |policy|
+    policy_file = File.join(custom_policy_prefix, policy)
+    upload_file(policy_file, bucket, key_alias, s3)
+  end
+
+end
+
+def get_stack_status(metadata_path)
+  metadata = YAML.load(IO.read(metadata_path))
+  region = metadata["region"]
+  stack_name = metadata["name"]
+  cf = Aws::CloudFormation::Client.new(region: region)
+  describe_stacks_response = cf.describe_stacks(stack_name: stack_name)
+  {
+      stack_name: stack_name,
+      stack_status: describe_stacks_response.stacks.first["stack_status"]
+  }
+end
+
+desc "describe manifest processing status"
+task :describe_manifest_status do |t, args|
+  manifest = YAML.load(IO.read('manifest.yml'))
+  functions = manifest["functions"].first.collect { |function| Function.new(function.first, function.last) }
+
+  base_path = File.join('..', 'functions')
+
+  begin
+    functions.each do |fx|
+      unless fx.contexts.nil?
+        fx.contexts.each do |context|
+          metadata_path = Metadata.locate_metadata(base_path, fx.function_name, context)
+          status = get_stack_status(metadata_path)
+          puts "#{status[:stack_name]}: #{status[:stack_status]}"
+        end
+      else
+        metadata_path = Metadata.locate_metadata(base_path, fx.function_name)
+        status = get_stack_status(metadata_path)
+        puts "#{status[:stack_name]}: #{status[:stack_status]}"
+      end
+    end
+  rescue => ex
+    puts "#{ex.message}"
+  end
+end
+
+desc "process manifest"
+task :process_manifest, [:artifacts_bucket, :dry_run] do |t, args|
+
+  #TODO: implement fail-fast
+
+  artifacts_bucket = args.artifacts_bucket
+  dry_run = args.dry_run || false
+
+  manifest = YAML.load(IO.read('manifest.yml'))
+  functions = manifest["functions"].first.collect { |function| Function.new(function.first, function.last) }
+
+  base_path = File.join('..', 'functions')
+
+  begin
+    functions.each do |fx|
+      unless fx.contexts.nil?
+        fx.contexts.each do |context|
+          metadata_path = Metadata.locate_metadata(base_path, fx.function_name, context)
+          deploy_sam(fx.function_name, base_path, metadata_path, artifacts_bucket, dry_run)
+        end
+      else
+        metadata_path = Metadata.locate_metadata(base_path, fx.function_name)
+        deploy_sam(fx.function_name, base_path, metadata_path, artifacts_bucket, dry_run)
+      end
+    end
+  rescue => ex
+    puts "#{ex.message}"
+  end
+
+end
+
+desc "deploy template"
+task :deploy_template, [:template_name, :dry_run] do |t, args|
+
+  #TODO: implement create or update
+  #TODO: implement re-create based on flag
+
+  template_name = args.template_name
+  raise "No template name specified" if template_name.nil?
+
+  dry_run = args.dry_run || false
+
+  base_path = File.join(['..', 'evolution', 'bootstrap', 'templates'])
+  puts deploy_template(template_name, base_path, dry_run)
+end
+
+def deploy_template(template_name, base_path, dry_run = false)
+
+  metadata_path = File.join(base_path, template_name, 'metadata.yml')
+  metadata = YAML.load(IO.read(metadata_path))
+
+  region = metadata["region"]
+  stack_name = metadata["name"]
+  parameters = metadata["Parameters"]
+  capabilities = metadata["capabilities"]
+  template_path = File.join(base_path, template_name, 'template.json')
+  template_body = IO.read(template_path)
+
+  cf = Aws::CloudFormation::Client.new(region: region)
+  create_stack_parameters = {
+      stack_name: stack_name,
+      template_body: template_body
+  }
+  create_stack_parameters[:parameters] = parameters unless parameters.nil?
+  create_stack_parameters[:capabilities] unless capabilities.nil?
+
+  if dry_run
+    "CloudFormation stack #{create_stack_parameters[:stack_name]} will be created in #{region}"
+  else
+    create_stack_response = cf.create_stack(create_stack_parameters)
+    create_stack_response.stack_id
+  end
+end
+
+desc "Package and deploy SAM to CloudFormation"
+task :deploy_SAM, [:template_name, :context, :artifacts_bucket, :dry_run] do |t, args|
+  template_name = args.template_name
+  raise "No template name specified" if template_name.nil?
+
+  context = args.context
+  raise "No context specified" if context.nil?
+
+  artifacts_bucket = args.artifacts_bucket
+  raise "No bucket specified for artifacts" if artifacts_bucket.nil?
+
+  dry_run = args.dry_run || false
+
+  base_path = File.join(['..', 'functions'])
+  metadata_path = File.join(base_path, template_name, 'contexts', context, 'metadata.yml')
+
+  deploy_sam(template_name, base_path, metadata_path, artifacts_bucket, dry_run)
+end
+
+def deploy_sam(template_name, base_path, metadata_path, artifacts_bucket, dry_run = false)
+
+  metadata = YAML.load(File.read(metadata_path))
+
+  region = metadata["region"]
+  stack_name = metadata["name"]
+  parameters = metadata["Parameters"]
+  capabilities = metadata["capabilities"]
+  template_path = File.join(base_path, template_name, 'template.yml')
+
+  FileUtils.makedirs 'working-folder'
+  package_command = "aws cloudformation --region #{region} package --template-file #{template_path} --output-template-file working-folder/output-template.yml --s3-bucket #{artifacts_bucket} --s3-prefix #{template_name}"
+
+  if dry_run
+    puts "#{package_command}"
+  else
+    puts `#{package_command}`
+  end
+
+  package_succeeded = false
+  unless dry_run
+    package_succeeded = ($?.exitstatus == 0)
+  end
+
+  #TODO: abort if package or deploy commands fail
+
+  deploy_command = "aws cloudformation --region #{region} deploy --template-file working-folder/output-template.yml --stack-name #{stack_name}"
+
+  unless (parameters.nil?)
+    deploy_command = deploy_command + " --parameter-overrides #{parameters.collect { |k, v| "#{k}=#{v}" }.join(" ")}"
+  end
+
+  unless (capabilities.nil?)
+    deploy_command = deploy_command + " --capabilities #{capabilities.collect { |capability| "#{capability}" }.join(" ")}"
+  end
+
+  if dry_run
+    puts "#{deploy_command}"
+  elsif package_succeeded
+    puts `#{deploy_command}`
+  else
+    raise "package command failed for #{template_name}"
+  end
+end
+
+class Account
+  attr_reader :id, :name
+
+  def initialize(id, name)
+    @id = id
+    @name = name
+  end
+end
+
+desc "Get CloudFormation stack status triggered via builds on all accounts for a context"
+task :get_stack_build_status, [:context] do |t, args|
+
+  context = args.context
+
+  context_path = File.join('..', 'functions', 'fan-out-trigger-build', 'contexts', context, 'metadata.yml')
+  metadata = YAML.load(IO.read(context_path))
+
+  control_account = metadata["Parameters"]["ControlAccount"]
+  stack_name = metadata["Parameters"]["Purpose"]
+  exclude_account = metadata["Parameters"]["ExcludeAccount"] || 'none'
+
+  unless exclude_account.eql?('none')
+    puts "Excluding account named #{exclude_account}"
+  end
+
+  accounts = []
+  org = Aws::Organizations::Client.new
+
+  if control_account.eql?('all')
+    accounts = (org.list_accounts.accounts.reject { |account| account.name.eql?(exclude_account) }).collect { |account| Account.new(account.id, account.name) }
+  else
+    account_info = org.list_accounts.accounts.select { |account| account.name.eql?(control_account) }.first
+    raise "Account not found for account name #{control_account}" if account_info.nil?
+    accounts << Account.new(account_info.id, account_info.name)
+  end
+
+  accounts.each do |account|
+    account_id, account_name = account.id, account.name
+    status = nil
+    begin
+      status = get_cf_stack_status(account_id, stack_name)
+      puts "#{account_name}, #{stack_name}: #{status}"
+    rescue => ex
+      puts "#{account_name}, #{ex.message}"
+    end
+  end
+end
+
+def get_cf_stack_status(account_id, stack_name)
+  sts = Aws::STS::Client.new
+  caller_identity = sts.get_caller_identity
+  current_account_id = caller_identity.account
+
+  cf = Aws::CloudFormation::Client.new
+  unless current_account_id.eql?(account_id)
+    role_arn = "arn:aws:iam::#{account_id}:role/OrganizationAccountAccessRole"
+    role_credentials = Aws::AssumeRoleCredentials.new(
+        role_arn: role_arn,
+        role_session_name: "get-cf-stack-status-#{account_id}"
+    )
+    cf = Aws::CloudFormation::Client.new(credentials: role_credentials)
+  end
+
+  begin
+    stack_desc = cf.describe_stacks(stack_name: stack_name)
+
+    if stack_desc
+      stack = stack_desc.stacks.first
+      stack.stack_status
+    end
+  rescue => ex
+    raise "#{ex.message}"
+  end
+end
+
+desc "Get CloudFormation stack status from a related account"
+task :get_cf_stack_status, [:stack_name, :account_name] do |t, args|
+
+  stack_name = args.stack_name
+  account_name = args.account_name
+
+  org = Aws::Organizations::Client.new
+  account_id = nil
+
+  if (account_name.eql?('master'))
+    org_response = org.describe_organization
+    account_id = org_response.organization.master_account_id
+  else
+    account = org.list_accounts.accounts.select { |account| account.name.eql?(account_name) }.first
+    raise "Account not found for account name #{account_name}" if account.nil?
+    account_id = account.id
+  end
+
+  raise "account Id not located" if account_id.nil?
+
+  status = nil
+  begin
+    status = get_cf_stack_status(account_id, stack_name)
+    puts "#{account_name}, #{stack_name}: #{status}"
+  rescue => ex
+    puts "#{account_name}, #{ex.message}"
+  end
+end
+
+desc "provision publishing account"
+task :provision_publishing_account, [:token] do |t, args|
+  token = args.token or raise 'token not supplied'
+  puts provision_publishing_account(token)
+end
+
+def provision_publishing_account(token)
+  org_client = Aws::Organizations::Client.new
+  accounts = org_client.list_accounts
+  publishing_account = accounts.accounts.select { |account| account.name.eql?('publishing') }.first
+  raise "Unable to locate publishing account" if publishing_account.nil?
+  publishing_account_id = publishing_account.id
+
+  provison_iam(publishing_account_id)
+  provision_service_catalog(publishing_account_id, token)
+end
+
+def provison_iam(publishing_account_id)
+  role_arn = "arn:aws:iam::#{publishing_account_id}:role/OrganizationAccountAccessRole"
+  role_session_name = "provision-publishing-account"
+  role_credentials = Aws::AssumeRoleCredentials.new(role_arn: role_arn, role_session_name: role_session_name)
+
+  iam = Aws::IAM::Client.new(credentials: role_credentials)
+
+  # Creating an administrator for Service Catalog
+  admin_user = 'sc-admin'
+  admin_group = 'sc-admin-group'
+  admin_role = 'sc-admin-role'
+
+  iam.create_user({user_name: admin_user})
+  iam.create_group({group_name: admin_group})
+  iam.create_role({
+                      role_name: admin_role,
+                      assume_role_policy_document: "{\"Version\": \"2012-10-17\",\"Statement\": [{\"Effect\": \"Allow\",\"Principal\": {\"Service\": \"servicecatalog.amazonaws.com\"},\"Action\": \"sts:AssumeRole\"}]}"
+                  })
+
+  end_user = 'sc-end-user'
+  end_user_group = 'sc-end-user-group'
+  end_user_role = 'sc-end-user-role'
+
+  # Creating an end-user for Service Catalog
+  iam.create_user({user_name: end_user})
+  iam.create_group({group_name: end_user_group})
+  iam.create_role({
+                      role_name: end_user_role,
+                      assume_role_policy_document: "{\"Version\": \"2012-10-17\",\"Statement\": [{\"Effect\": \"Allow\",\"Principal\": {\"Service\": \"servicecatalog.amazonaws.com\"},\"Action\": \"sts:AssumeRole\"}]}"
+                  })
+
+  # administrator policy
+  iam.attach_role_policy({
+                             policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogAdminFullAccess",
+                             role_name: admin_role
+                         })
+  iam.attach_group_policy({
+                              group_name: admin_group,
+                              policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogAdminFullAccess"
+                          })
+  iam.add_user_to_group({
+                            group_name: admin_group,
+                            user_name: admin_user
+                        })
+
+  # end-user policy
+  iam.attach_role_policy({
+                             policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogEndUserFullAccess",
+                             role_name: end_user_role
+                         })
+  iam.attach_group_policy({
+                              group_name: end_user_group,
+                              policy_arn: "arn:aws:iam::aws:policy/ServiceCatalogEndUserFullAccess"
+                          })
+  iam.add_user_to_group({
+                            group_name: end_user_group,
+                            user_name: end_user
+                        })
+
+end
+
+def provision_service_catalog(publishing_account_id, token)
+  role_arn = "arn:aws:iam::#{publishing_account_id}:role/OrganizationAccountAccessRole"
+  role_session_name = "provision-publishing-account"
+  role_credentials = Aws::AssumeRoleCredentials.new(role_arn: role_arn, role_session_name: role_session_name)
+
+  servicecatalog = Aws::ServiceCatalog::Client.new(credentials: role_credentials)
+  portfolio = servicecatalog.create_portfolio({
+                                                  display_name: "demo-portfolio",
+                                                  description: "demonstration portfolio",
+                                                  provider_name: "portfolio-provider",
+                                                  idempotency_token: token
+                                              })
+
+
+  org_client = Aws::Organizations::Client.new
+  accounts_list = org_client.list_accounts
+
+  #TODO: also exclude master account
+  control_accounts = %w(logging identity publishing)
+  functional_account_ids = (accounts_list.accounts.reject { |account| control_accounts.include?(account.name) }).collect { |account| account.id }
+
+  functional_account_ids.each do |account_id|
+    servicecatalog.create_portfolio_share({
+                                              portfolio_id: portfolio.portfolio_detail.id,
+                                              account_id: account_id
+                                          })
+  end
+end

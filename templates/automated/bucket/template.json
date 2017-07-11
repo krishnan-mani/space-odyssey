@@ -1,0 +1,18 @@
+{
+  "Parameters": {
+    "OrganizationId": {
+      "Description": "Id for the organization",
+      "Type": "String"
+    },
+    "IdentityAccountId": {
+      "Description": "Account ID of the Identity account.",
+      "Type": "String",
+      "Default": "not-available"
+    }
+  },
+  "Resources": {
+    "bucket": {
+      "Type": "AWS::S3::Bucket"
+    }
+  }
+}

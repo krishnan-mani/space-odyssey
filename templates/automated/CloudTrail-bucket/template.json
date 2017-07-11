@@ -1,0 +1,39 @@
+{
+  "Parameters": {
+    "OrganizationId": {
+      "Description": "Id for the organization",
+      "Type": "String"
+    },
+    "IdentityAccountId": {
+      "Description": "Account ID of the Identity account.",
+      "Type": "String",
+      "Default": "not-available"
+    }
+  },
+  "Resources": {
+    "CloudTrailCommonBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Join": [
+            "-",
+            [
+              "cloudtrail",
+              "logs",
+              {
+                "Ref": "OrganizationId"
+              }
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Value": {
+        "Ref": "CloudTrailCommonBucket"
+      }
+    }
+  }
+}

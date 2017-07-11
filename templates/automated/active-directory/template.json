@@ -1,0 +1,908 @@
+{
+  "Description": "Create a VPC with 2 subnets, AD with AWS Directory Service, and Windows instance with AD tools. The Windows instance can be used to create Users and Groups in the AD.",
+  "Parameters": {
+    "OrganizationId": {
+      "Description": "Id for the organization",
+      "Type": "String"
+    },
+    "IdentityAccountId": {
+      "Description": "Account ID of the Identity account.",
+      "Type": "String",
+      "Default": "not-available"
+    },
+    "FQDN": {
+      "Description": "The fully qualified name for the directory, such as corp.example.com.",
+      "Type": "String",
+      "Default": "corp.techsummit.com"
+    },
+    "ADAdminPassword": {
+      "Description": "The password for the directory administrator. AWS Directory Service creates a directory administrator account with the user name Admin and this password.",
+      "Type": "String",
+      "NoEcho": "True",
+      "ConstraintDescription": "Must be between 8 and 64 characters in length, inclusive. It must also contain at least one character from three of the following four categories:Lowercase letters,Uppercase letters,Numbers,Non-alphanumeric characters",
+      "Default": "chaltaHa!"
+    },
+    "RDPLocation": {
+      "Description": "The IP address range that can be used to RDP to the EC2 instances",
+      "Type": "String",
+      "MinLength": "9",
+      "MaxLength": "18",
+      "Default": "0.0.0.0/0",
+      "AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+      "ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
+    },
+    "ADUserPassword": {
+      "Description": "The password for the directory users. AWS Directory Service creates a sample directory users with the user name you specify and this password.",
+      "Type": "String",
+      "NoEcho": "True",
+      "ConstraintDescription": "Must be between 8 and 64 characters in length, inclusive. It must also contain at least one character from three of the following four categories:Lowercase letters,Uppercase letters,Numbers,Non-alphanumeric characters",
+      "Default": "chaltaHa!"
+    }
+  },
+  "Mappings": {
+    "AWSRegion2AMI": {
+      "us-east-1": {
+        "Windows2012r2": "ami-271b6d31"
+      },
+      "us-west-2": {
+        "Windows2012r2": "ami-3189ec51"
+      },
+      "us-west-1": {
+        "Windows2012r2": "ami-59a78139"
+      },
+      "eu-west-1": {
+        "Windows2012r2": "ami-96d4daf0"
+      },
+      "eu-west-2": {
+        "Windows2012r2": "ami-07455263"
+      },
+      "eu-central-1": {
+        "Windows2012r2": "ami-f9528c96"
+      },
+      "ap-northeast-1": {
+        "Windows2012r2": "ami-539aa834"
+      },
+      "ap-northeast-2": {
+        "Windows2012r2": "ami-50e13c3e"
+      },
+      "ap-southeast-1": {
+        "Windows2012r2": "ami-9e3bbefd"
+      },
+      "ap-southeast-2": {
+        "Windows2012r2": "ami-c4262ca7"
+      },
+      "ap-south-1": {
+        "Windows2012r2": "ami-67047908"
+      },
+      "us-east-2": {
+        "Windows2012r2": "ami-7fc4e31a"
+      },
+      "ca-central-1": {
+        "Windows2012r2": "ami-687ec20c"
+      },
+      "sa-east-1": {
+        "Windows2012r2": "ami-af6708c3"
+      }
+    }
+  },
+  "Resources": {
+    "ADVPC": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "Tags": [
+          {
+            "Key": "Purpose",
+            "Value": "AD"
+          }
+        ]
+      }
+    },
+    "ADSubnet1": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ADVPC"
+        },
+        "CidrBlock": "10.0.1.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "0",
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "Tags": [
+          {
+            "Key": "Purpose",
+            "Value": "AD"
+          }
+        ]
+      }
+    },
+    "ADSubnet2": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ADVPC"
+        },
+        "CidrBlock": "10.0.2.0/24",
+        "AvailabilityZone": {
+          "Fn::Select": [
+            "1",
+            {
+              "Fn::GetAZs": ""
+            }
+          ]
+        },
+        "Tags": [
+          {
+            "Key": "Purpose",
+            "Value": "AD"
+          }
+        ]
+      }
+    },
+    "InternetGateway": {
+      "Type": "AWS::EC2::InternetGateway",
+      "Properties": {
+        "Tags": [
+          {
+            "Key": "Purpose",
+            "Value": "AD"
+          }
+        ]
+      }
+    },
+    "AttachGateway": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ADVPC"
+        },
+        "InternetGatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "RouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ADVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Purpose",
+            "Value": "AD"
+          }
+        ]
+      }
+    },
+    "Route": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "AttachGateway",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "RouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "InternetGateway"
+        }
+      }
+    },
+    "Subnet1RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "ADSubnet1"
+        },
+        "RouteTableId": {
+          "Ref": "RouteTable"
+        }
+      }
+    },
+    "Subnet2RouteTableAssociation": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "SubnetId": {
+          "Ref": "ADSubnet2"
+        },
+        "RouteTableId": {
+          "Ref": "RouteTable"
+        }
+      }
+    },
+    "NetworkAcl": {
+      "Type": "AWS::EC2::NetworkAcl",
+      "Properties": {
+        "VpcId": {
+          "Ref": "ADVPC"
+        },
+        "Tags": [
+          {
+            "Key": "Purpose",
+            "Value": "AD"
+          }
+        ]
+      }
+    },
+    "myADirectory": {
+      "Type": "AWS::DirectoryService::MicrosoftAD",
+      "Properties": {
+        "Name": {
+          "Ref": "FQDN"
+        },
+        "Password": {
+          "Ref": "ADAdminPassword"
+        },
+        "VpcSettings": {
+          "SubnetIds": [
+            {
+              "Ref": "ADSubnet1"
+            },
+            {
+              "Ref": "ADSubnet2"
+            }
+          ],
+          "VpcId": {
+            "Ref": "ADVPC"
+          }
+        }
+      }
+    },
+    "EC2SSMRootRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "ssm.amazonaws.com",
+                  "ec2.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Path": "/"
+      }
+    },
+    "EC2SSMRolePolicies": {
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "root",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ssm:DescribeAssociation",
+                "ssm:GetDeployablePatchSnapshotForInstance",
+                "ssm:GetDocument",
+                "ssm:GetParameters",
+                "ssm:ListAssociations",
+                "ssm:ListInstanceAssociations",
+                "ssm:PutInventory",
+                "ssm:UpdateAssociationStatus",
+                "ssm:UpdateInstanceAssociationStatus",
+                "ssm:UpdateInstanceInformation"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2messages:AcknowledgeMessage",
+                "ec2messages:DeleteMessage",
+                "ec2messages:FailMessage",
+                "ec2messages:GetEndpoint",
+                "ec2messages:GetMessages",
+                "ec2messages:SendReply"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "cloudwatch:PutMetricData"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ec2:DescribeInstanceStatus"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "ds:CreateComputer",
+                "ds:DescribeDirectories"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogGroups",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:AbortMultipartUpload",
+                "s3:ListMultipartUploadParts",
+                "s3:ListBucketMultipartUploads"
+              ],
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:ListBucket"
+              ],
+              "Resource": "arn:aws:s3:::amazon-ssm-packages-*"
+            }
+          ]
+        },
+        "Roles": [
+          {
+            "Ref": "EC2SSMRootRole"
+          }
+        ]
+      }
+    },
+    "EC2SSMRootInstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Path": "/",
+        "Roles": [
+          {
+            "Ref": "EC2SSMRootRole"
+          }
+        ]
+      }
+    },
+    "InstanceSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow RDP to client host",
+        "VpcId": {
+          "Ref": "ADVPC"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": "3389",
+            "ToPort": "3389",
+            "CidrIp": {
+              "Ref": "RDPLocation"
+            }
+          }
+        ]
+      }
+    },
+    "ADInstance2": {
+      "Type": "AWS::EC2::Instance",
+      "Metadata": {
+        "AWS::CloudFormation::Init": {
+          "config": {
+            "files": {
+              "c:\\cfn\\cfn-hup.conf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[main]\n",
+                      "stack=",
+                      {
+                        "Ref": "AWS::StackId"
+                      },
+                      "\n",
+                      "region=",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      "\n"
+                    ]
+                  ]
+                }
+              },
+              "c:\\cfn\\scripts\\Credentials.ps1": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[CmdletBinding()]",
+                      "param( [string][Parameter(Position=0)] $Password );",
+                      "$encryptedpass = ConvertTo-SecureString $password -asplaintext -force;",
+                      "$cred = New-Object -typename System.Management.Automation.PSCredential -argumentlist Admin,$encryptedpass;",
+                      "$cred | Export-Clixml -Path 'C:\\cfn\\Admin.Cred';",
+                      "\n"
+                    ]
+                  ]
+                }
+              },
+              "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf": {
+                "content": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "[cfn-auto-reloader-hook]\n",
+                      "triggers=post.update\n",
+                      "path=Resources.ADInstance2.Metadata.AWS::CloudFormation::Init\n",
+                      "action=cfn-init.exe -v -s ",
+                      {
+                        "Ref": "AWS::StackId"
+                      },
+                      " -r ADInstance2",
+                      " --region ",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      " \n"
+                    ]
+                  ]
+                }
+              }
+            },
+            "commands": {
+              "1-install-prereqs": {
+                "command": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "powershell.exe -Command \"Install-WindowsFeature AD-Domain-Services, rsat-adds -IncludeAllSubFeature"
+                    ]
+                  ]
+                },
+                "waitAfterCompletion": "0"
+              },
+              "2-export-creds": {
+                "command": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "powershell.exe -ExecutionPolicy RemoteSigned -Command c:\\cfn\\scripts\\Credentials.ps1 -Password ",
+                      {
+                        "Ref": "ADAdminPassword"
+                      }
+                    ]
+                  ]
+                },
+                "waitAfterCompletion": "0"
+              },
+              "6-signal-success": {
+                "command": {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "cfn-signal.exe -e %ERRORLEVEL% \"",
+                      {
+                        "Fn::Base64": {
+                          "Ref": "WindowsServerWaitHandle"
+                        }
+                      },
+                      "\""
+                    ]
+                  ]
+                }
+              }
+            },
+            "services": {
+              "windows": {
+                "cfn-hup": {
+                  "enabled": "true",
+                  "ensureRunning": "true",
+                  "files": [
+                    "c:\\cfn\\cfn-hup.conf",
+                    "c:\\cfn\\hooks.d\\cfn-auto-reloader.conf"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "Properties": {
+        "InstanceType": "m4.large",
+        "ImageId": {
+          "Fn::FindInMap": [
+            "AWSRegion2AMI",
+            {
+              "Ref": "AWS::Region"
+            },
+            "Windows2012r2"
+          ]
+        },
+        "SsmAssociations": [
+          {
+            "DocumentName": {
+              "Ref": "ADJoindocument"
+            },
+            "AssociationParameters": [
+              {
+                "Key": "directoryId",
+                "Value": [
+                  {
+                    "Ref": "myADirectory"
+                  }
+                ]
+              },
+              {
+                "Key": "directoryName",
+                "Value": [
+                  {
+                    "Ref": "FQDN"
+                  }
+                ]
+              },
+              {
+                "Key": "dnsIpAddresses",
+                "Value": {
+                  "Fn::GetAtt": [
+                    "myADirectory",
+                    "DnsIpAddresses"
+                  ]
+                }
+              }
+            ]
+          }
+        ],
+        "IamInstanceProfile": {
+          "Ref": "EC2SSMRootInstanceProfile"
+        },
+        "NetworkInterfaces": [
+          {
+            "AssociatePublicIpAddress": "true",
+            "DeviceIndex": "0",
+            "SubnetId": {
+              "Ref": "ADSubnet1"
+            },
+            "GroupSet": [
+              {
+                "Ref": "InstanceSecurityGroup"
+              }
+            ]
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "Windows-AD-Client"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "<script>\n",
+                "cfn-init.exe -v -s ",
+                {
+                  "Ref": "AWS::StackId"
+                },
+                " -r ADInstance2",
+                " --region ",
+                {
+                  "Ref": "AWS::Region"
+                },
+                "\n",
+                "</script>"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "WindowsServerWaitHandle": {
+      "Type": "AWS::CloudFormation::WaitConditionHandle"
+    },
+    "WindowsServerWaitCondition": {
+      "Type": "AWS::CloudFormation::WaitCondition",
+      "DependsOn": "ADInstance2",
+      "Properties": {
+        "Handle": {
+          "Ref": "WindowsServerWaitHandle"
+        },
+        "Timeout": "1800"
+      }
+    },
+    "ADJoindocument": {
+      "Type": "AWS::SSM::Document",
+      "Properties": {
+        "Content": {
+          "schemaVersion": "1.2",
+          "description": "Join instances to an AWS Directory Service domain.",
+          "parameters": {
+            "directoryId": {
+              "type": "String",
+              "description": "(Required) The ID of the AWS Directory Service directory."
+            },
+            "directoryName": {
+              "type": "String",
+              "description": "(Required) The name of the directory; for example, test.example.com"
+            },
+            "dnsIpAddresses": {
+              "type": "StringList",
+              "default": [],
+              "description": "(Optional) The IP addresses of the DNS servers in the directory. Required when DHCP is not configured. ",
+              "allowedPattern": "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+            }
+          },
+          "runtimeConfig": {
+            "aws:domainJoin": {
+              "properties": {
+                "directoryId": "{{ directoryId }}",
+                "directoryName": "{{ directoryName }}",
+                "dnsIpAddresses": "{{ dnsIpAddresses }}"
+              }
+            }
+          }
+        }
+      }
+    },
+    "ADGroupdocument": {
+      "Type": "AWS::SSM::Document",
+      "Properties": {
+        "Content": {
+          "schemaVersion": "1.2",
+          "description": "Run Powershell command to create Group.",
+          "parameters": {
+            "groupName": {
+              "type": "String",
+              "description": "(Required) The name of group to be created in AWS Directory Service directory.GroupName must start with 'AWS-'"
+            }
+          },
+          "runtimeConfig": {
+            "aws:runPowerShellScript": {
+              "properties": [
+                {
+                  "runCommand": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "New-ADGroup -Name {{ groupName }} -GroupScope DomainLocal -GroupCategory Security -Path 'OU=Users,OU=corp,DC=",
+                          {
+                            "Fn::Select": [
+                              "0",
+                              {
+                                "Fn::Split": [
+                                  ".",
+                                  {
+                                    "Ref": "FQDN"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          ",DC=",
+                          {
+                            "Fn::Select": [
+                              "1",
+                              {
+                                "Fn::Split": [
+                                  ".",
+                                  {
+                                    "Ref": "FQDN"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          ",DC=",
+                          {
+                            "Fn::Select": [
+                              "2",
+                              {
+                                "Fn::Split": [
+                                  ".",
+                                  {
+                                    "Ref": "FQDN"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "' -Credential (Import-CliXml -Path C:\\cfn\\Admin.Cred)"
+                        ]
+                      ]
+                    },
+                    "Get-ADGroupMember -Identity {{ groupName }} "
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "ADGroupassociation": {
+      "Type": "AWS::SSM::Association",
+      "Properties": {
+        "Name": {
+          "Ref": "ADGroupdocument"
+        },
+        "Parameters": {
+          "groupName": [
+            "{{ groupName }}"
+          ]
+        },
+        "Targets": [
+          {
+            "Key": "InstanceIds",
+            "Values": [
+              {
+                "Ref": "ADInstance2"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "ADUserdocument": {
+      "Type": "AWS::SSM::Document",
+      "Properties": {
+        "Content": {
+          "schemaVersion": "1.2",
+          "description": "Run Powershell command to create user and add to an existing group.",
+          "parameters": {
+            "userName": {
+              "type": "String",
+              "description": "(Required) The name of group to be created in AWS Directory Service directory."
+            },
+            "groupName": {
+              "type": "String",
+              "description": "(Required) The name of existing group in which User should be.GroupName must start with 'AWS-'"
+            }
+          },
+          "runtimeConfig": {
+            "aws:runPowerShellScript": {
+              "properties": [
+                {
+                  "runCommand": [
+                    {
+                      "Fn::Join": [
+                        "",
+                        [
+                          "New-ADUser -Name {{ userName }} -Path 'OU=Users,OU=corp,DC=",
+                          {
+                            "Fn::Select": [
+                              "0",
+                              {
+                                "Fn::Split": [
+                                  ".",
+                                  {
+                                    "Ref": "FQDN"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          ",DC=",
+                          {
+                            "Fn::Select": [
+                              "1",
+                              {
+                                "Fn::Split": [
+                                  ".",
+                                  {
+                                    "Ref": "FQDN"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          ",DC=",
+                          {
+                            "Fn::Select": [
+                              "2",
+                              {
+                                "Fn::Split": [
+                                  ".",
+                                  {
+                                    "Ref": "FQDN"
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          "' -Credential (Import-CliXml -Path C:\\cfn\\Admin.Cred) -UserPrincipalName {{ userName }}@",
+                          {
+                            "Ref": "FQDN"
+                          },
+                          " -AccountPassword (ConvertTo-SecureString '",
+                          {
+                            "Ref": "ADUserPassword"
+                          },
+                          "' -AsPlainText -Force) -Enabled $true -PassThru"
+                        ]
+                      ]
+                    },
+                    "Add-ADGroupMember -Identity {{ groupName }} -Members {{ userName }}  -Credential (Import-CliXml -Path C:\\cfn\\Admin.Cred)",
+                    "Get-ADGroupMember -Identity {{ groupName }} "
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "ADUserassociation": {
+      "Type": "AWS::SSM::Association",
+      "Properties": {
+        "Name": {
+          "Ref": "ADUserdocument"
+        },
+        "Parameters": {
+          "groupName": [
+            "{{ groupName }}"
+          ],
+          "userName": [
+            "{{ userName }}"
+          ]
+        },
+        "Targets": [
+          {
+            "Key": "InstanceIds",
+            "Values": [
+              {
+                "Ref": "ADInstance2"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "ADClientInstanceIP": {
+      "Description": "Public IP of the AD Client",
+      "Value": {
+        "Fn::GetAtt": [
+          "ADInstance2",
+          "PublicIp"
+        ]
+      }
+    },
+    "ADClientInstanceID": {
+      "Description": "Instance ID of the AD Client",
+      "Value": {
+        "Ref": "ADInstance2"
+      }
+    },
+    "ADUserDocName": {
+      "Description": " Add User to AD SSM document name",
+      "Value": {
+        "Ref": "ADUserdocument"
+      }
+    },
+    "ADGroupDocName": {
+      "Description": " Add Group to AD SSM document name",
+      "Value": {
+        "Ref": "ADGroupdocument"
+      }
+    }
+  }
+}

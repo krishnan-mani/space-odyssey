@@ -1,0 +1,89 @@
+{
+  "Resources": {
+    "repository": {
+      "Type": "AWS::CodeCommit::Repository",
+      "Properties": {
+        "RepositoryName": "space-odyssey",
+        "RepositoryDescription": "version control repository for automation to manage accounts that are part of an Organization"
+      }
+    },
+    "triggerBuildsTopic": {
+      "Type": "AWS::SNS::Topic",
+      "Properties": {
+        "DisplayName": "Publish notifications to this topic to trigger builds on CodeBuild projects"
+      }
+    },
+    "provisionCrossAccountBuild": {
+      "Type": "AWS::CodeBuild::Project",
+      "Properties": {
+        "Name": "provision-cross-account",
+        "ServiceRole": {
+          "Fn::Join": [
+            ":",
+            [
+              "arn:aws:iam:",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              "role/CodeBuild-CrossAccount-ServiceRole"
+            ]
+          ]
+        },
+        "Artifacts": {
+          "Type": "NO_ARTIFACTS"
+        },
+        "Environment": {
+          "ComputeType": "BUILD_GENERAL1_SMALL",
+          "Image": "aws/codebuild/ruby:2.3.1",
+          "Type": "LINUX_CONTAINER",
+          "EnvironmentVariables": []
+        },
+        "Source": {
+          "Type": "CODECOMMIT",
+          "Location": {
+            "Fn::GetAtt": [
+              "repository",
+              "CloneUrlHttp"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "RepositoryHTTPUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "repository",
+          "CloneUrlHttp"
+        ]
+      }
+    },
+    "RepositorySSHUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "repository",
+          "CloneUrlSsh"
+        ]
+      }
+    },
+    "TriggerBuildsTopicARN": {
+      "Value": {
+        "Ref": "triggerBuildsTopic"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Join": [
+            ":",
+            [
+              {
+                "Ref": "AWS::StackName"
+              },
+              "TriggerBuildsTopicARN"
+            ]
+          ]
+        }
+      }
+    }
+  }
+}

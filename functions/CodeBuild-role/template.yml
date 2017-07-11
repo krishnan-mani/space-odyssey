@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Create a service role for CodeBuild to provision CloudFormation stacks on all accounts in the Organization
+Resources:
+
+  CodeBuildServiceRoleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Create a service role for CodeBuild to provision CloudFormation stacks on all accounts in the Organization
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Timeout: 300
+      Policies:
+       - Version: '2012-10-17'
+         Statement:
+           - Effect: Allow
+             Action:
+               - 'organizations:Describe*'
+               - 'organizations:List*'
+               - 'iam:GetRole'
+               - 'iam:CreateRole'
+               - 'iam:PutRolePolicy'
+             Resource: '*'
+      Events:
+        RecurringEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(3 minutes)

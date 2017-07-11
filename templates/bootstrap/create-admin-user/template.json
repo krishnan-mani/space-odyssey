@@ -1,0 +1,30 @@
+{
+  "Parameters": {
+    "AdminGroupStackName": {
+      "Description": "Name of the CloudFormation stack that created the group with administrative privileges",
+      "Type": "String",
+      "Default": "admin-group"
+    },
+    "UserName": {
+      "Description": "Chosen username",
+      "Type": "String"
+    }
+  },
+  "Resources": {
+    "privilegedUser": {
+      "Type": "AWS::IAM::User",
+      "Properties": {
+        "Groups": [
+          {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${AdminGroupStackName}-AdminGroupName"
+            }
+          }
+        ],
+        "UserName": {
+          "Ref": "UserName"
+        }
+      }
+    }
+  }
+}

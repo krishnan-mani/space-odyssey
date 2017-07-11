@@ -1,0 +1,37 @@
+{
+  "Parameters": {
+    "OrganizationId": {
+      "Description": "Id for the organization",
+      "Type": "String"
+    },
+    "IdentityAccountId": {
+      "Description": "Account ID of the Identity account.",
+      "Type": "String",
+      "Default": "not-available"
+    }
+  },
+  "Resources": {
+    "globalCloudTrail": {
+      "Type": "AWS::CloudTrail::Trail",
+      "Properties": {
+        "EnableLogFileValidation": true,
+        "IncludeGlobalServiceEvents": true,
+        "IsLogging": true,
+        "IsMultiRegionTrail": true,
+        "S3BucketName": {
+          "Fn::Join": [
+            "-",
+            [
+              "cloudtrail",
+              "logs",
+              {
+                "Ref": "OrganizationId"
+              }
+            ]
+          ]
+        }
+      }
+    }
+  }
+}
+

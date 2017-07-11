@@ -1,0 +1,34 @@
+{
+  "Resources": {
+    "AdminGroup": {
+      "Type": "AWS::IAM::Group",
+      "Properties": {
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AdministratorAccess"
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "AdminGroupName": {
+      "Description": "Name assigned to admin group on creation",
+      "Value": {
+        "Ref": "AdminGroup"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-AdminGroupName"
+        }
+      }
+    },
+    "AdminGroupARN": {
+      "Description": "ARN for the group granted Administrative access",
+      "Value": {
+        "Fn::GetAtt": [
+          "AdminGroup",
+          "Arn"
+        ]
+      }
+    }
+  }
+}
