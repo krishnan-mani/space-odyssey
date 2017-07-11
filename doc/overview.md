@@ -42,6 +42,13 @@ module 1: preparation and pre-requisites
 - provision a CloudFormation template for "essentials"
 - familiarize yourself with the automation
 - use "rake tasks" to implement the workshop
+- milestones: 
+  - ability to run the workshop automation, either locally or from EC2 instance
+  - S3 bucket provisioned for artifacts 
+  - deployed CloudFormation stack ```essentials```
+  - git repository in CodeCommit with source code for workshop
+  - build project in CodeBuild
+  - SNS topic
 
 module 2: organization, accounts, and organizational units
 ===
@@ -50,13 +57,21 @@ module 2: organization, accounts, and organizational units
 - create organization
 - create accounts: "control accounts", "functional accounts"
 - create organizational units
-- move accounts to organizational units 
+- move accounts to organizational units
+- milestones:
+  - organization, organizational units, and accounts under organizational units
+  - "control accounts" are created (named "logging", "identity", and "publishing")
+  - one or more "functional accounts" are created (suggestion: name them after some of planet Saturn's satellites)
+  - navigate to any of the accounts from the console using the ```OrganizationAccountAccessRole```
 
 module 3: automation
 ===
 
 - (provision scheduled function to) create the role for CodeBuild
 - (provision scheduled function to) trigger builds in CodeBuild
+- milestone:
+  - deployed CloudFormation stack ```CodeBuild-role```
+  - deployed CloudFormation stack ```trigger-builds-listener```
 
 module 4: logging account (illustrated with CloudTrail)
 ===
@@ -67,6 +82,14 @@ module 4: logging account (illustrated with CloudTrail)
 - (optional) use Service Control Policies to restrict use of logging account
 - (optional) use CloudFormation update policy to restrict who can make changes to CloudFormation stacks
 - add new accounts, and verify that CloudTrail is enabled and logging to common bucket
+- milestones:
+  - deployed CloudFormation stack ```CloudTrail-bucket-on-logging```
+  - deployed CloudFormation stack ```CloudTrail-bucket-policy```
+  - deployed CloudFormation stack ```CloudTrail-on-all```
+  - navigate to any of the accounts (other than logging account) and verify CloudTrail is provisioned
+  - navigate to logging account and verify CloudTrail logs from multiple accounts are being written
+  - add a new account to the organization, and verify that CloudTrail is similarly provisioned
+
 
 module 5: identity account (illustrated with Cross Account Manager)
 ===
@@ -79,6 +102,12 @@ module 5: identity account (illustrated with Cross Account Manager)
 - provision the Cross Account Manager component in all of the other accounts
 - assign groups in Active Directory to roles
 - user access to AWS accounts for the assigned role via federation to the console
+- milestones:
+  - deployed CloudFormation stack ```active-directory-on-identity```
+  - deployed CloudFormation stack ```cam-on-identity```
+  - deployed CloudFormation stack ```cam-on-sub-accounts```
+  - verify DynamoDB tables in identity account for accounts and roles applied (look for ```active``` status)
+  - access some account as the designated role
 
 Not illustrated here:
 === 
