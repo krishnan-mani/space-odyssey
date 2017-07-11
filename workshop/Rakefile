@@ -34,7 +34,13 @@ end
 desc "display accounts"
 task :display_accounts do
   org_client = Aws::Organizations::Client.new
-  org_response = org_client.describe_organization
+
+  begin
+    org_response = org_client.describe_organization
+  rescue => ex
+    abort("Error: #{ex.message}")
+  end
+
   organization = org_response.organization
   organization_id = organization.id
   master_account_id = organization.master_account_id
