@@ -1,5 +1,7 @@
 content for the space-odyssey workshop
 
+IMPORTANT: Use ```us-east-1``` as the designated AWS region
+
 organisation of files:
 
 - [doc](doc): documentation including instructions
