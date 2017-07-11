@@ -41,12 +41,14 @@ module 1: preparation and pre-requisites
 - Use any AWS account
 - install the dependencies locally, or alternatively, provision an EC2 instance using the template for ```workshop-instance```
 - setup the bucket for artifacts
+- (provision scheduled function to) create the role for CodeBuild
 - provision a CloudFormation template for "essentials"
 - familiarize yourself with the automation
 - use "rake tasks" to implement the workshop
 - milestones: 
   - ability to run the workshop automation, either locally or from EC2 instance
   - S3 bucket provisioned for artifacts 
+  - deployed CloudFormation stack ```CodeBuild-role```
   - deployed CloudFormation stack ```essentials```
   - git repository in CodeCommit with source code for workshop
   - build project in CodeBuild
@@ -69,10 +71,8 @@ module 2: organization, accounts, and organizational units
 module 3: automation
 ===
 
-- (provision scheduled function to) create the role for CodeBuild
 - (provision scheduled function to) trigger builds in CodeBuild
 - milestone:
-  - deployed CloudFormation stack ```CodeBuild-role```
   - deployed CloudFormation stack ```trigger-builds-listener```
 
 module 4: logging account (illustrated with CloudTrail)
