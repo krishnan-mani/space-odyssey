@@ -106,8 +106,12 @@ def create_account(account_name, base_email, group)
 
   org_client = Aws::Organizations::Client.new
   email = "#{base_email.split('@').first}+#{group}-#{account_name}@#{base_email.split('@').last}"
-  create_account_response = org_client.create_account(account_name: account_name, email: email)
-  create_account_response.create_account_status
+  begin
+    create_account_response = org_client.create_account(account_name: account_name, email: email)
+    create_account_response.create_account_status
+  rescue Aws::Organizations::Errors::ConstraintViolationException => ex
+    abort("Error: #{ex.message}")
+  end
 end
 
 desc "create account"
