@@ -121,6 +121,7 @@ Not illustrated here:
 Known issues:
 ===
 
+- Accounts created using the Organizations API cannot be deleted (for now)
 - Account name not returned from list-accounts for some time after creation
 - Cross Account Manager does not process accounts when an account number begins with zero
 - Exceeded allowed number of accounts
