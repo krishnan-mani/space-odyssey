@@ -39,6 +39,8 @@ module 1: preparation and pre-requisites
 ===
 
 - Use any AWS account
+- install the dependencies locally, or alternatively, provision an EC2 instance using the template for ```workshop-instance```
+- setup the bucket for artifacts
 - provision a CloudFormation template for "essentials"
 - familiarize yourself with the automation
 - use "rake tasks" to implement the workshop
