@@ -1,4 +1,5 @@
 Goals:
+===
 
 - Work with multiple accounts (ownership, access, usage, financial control)
 - Ensure security and compliance across accounts
@@ -8,8 +9,10 @@ Goals:
 How: use workflows to provision new accounts that scale well
 
 the [Dream](dream.md)
+===
 
 Workshop:
+===
 
 - organized into modules
 - module 1: preparation and pre-requisites
@@ -19,6 +22,7 @@ Workshop:
 - module 5: identity account (illustrated with Cross Account Manager)
  
 Concepts and principles:
+===
 
 - AWS Organizations: organization, organizational units (OU), accounts, and Service Control Policies (SCP)
 - Cross-account access with IAM roles ("OrganizationAccountAccessRole")
@@ -32,6 +36,7 @@ Concepts and principles:
   - Groups in Active Directory are assigned to IAM roles
 
 module 1: preparation and pre-requisites
+===
 
 - Use any AWS account
 - provision a CloudFormation template for "essentials"
@@ -39,6 +44,7 @@ module 1: preparation and pre-requisites
 - use "rake tasks" to implement the workshop
 
 module 2: organization, accounts, and organizational units
+===
 
 - display accounts
 - create organization
@@ -47,11 +53,13 @@ module 2: organization, accounts, and organizational units
 - move accounts to organizational units 
 
 module 3: automation
+===
 
 - (provision scheduled function to) create the role for CodeBuild
 - (provision scheduled function to) trigger builds in CodeBuild
 
 module 4: logging account (illustrated with CloudTrail)
+===
 
 - create common bucket to receive logs, owned by "logging" account
 - ensure bucket policy allows logging from CloudTrail from multiple accounts
@@ -61,6 +69,7 @@ module 4: logging account (illustrated with CloudTrail)
 - add new accounts, and verify that CloudTrail is enabled and logging to common bucket
 
 module 5: identity account (illustrated with Cross Account Manager)
+===
 
 - provision Active Directory in the "identity account" (other alternatives are available)
 - enable access to the AWS Management Console via federation
