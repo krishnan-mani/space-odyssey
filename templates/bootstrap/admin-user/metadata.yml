@@ -1,4 +1,4 @@
-name: vijay-user
+name: Bob-user
 region: us-east-1
 capabilities:
   - CAPABILITY_IAM
