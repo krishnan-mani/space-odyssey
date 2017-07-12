@@ -1,0 +1,7 @@
+functions:
+  -
+    CodeBuild-role:
+    trigger-builds-listener:
+    fan-out-trigger-build:
+      - trigger-logging-CloudTrail-bucket
+
