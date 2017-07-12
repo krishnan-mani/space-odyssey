@@ -1,0 +1,9 @@
+roles:
+  -
+    Billing-all :
+       action : add
+       policy : Billing-no-account.json
+
+    Auditor-all :
+       action : add
+       policy : Auditor-no-account.json
