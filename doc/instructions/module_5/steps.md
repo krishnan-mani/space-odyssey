@@ -7,7 +7,9 @@ workshop $ rake describe_manifest_status
 
 ```
 
-- Configure Active Directory to set the access URL
+*NOTE*: Perform the following steps with Active Directory later (since provisioning Active Directory is time-consuming and these steps are independent of the subsequent steps)
+
+- Configure Active Directory to set a unique access URL (hint: use organization Id), and enabled single sign-on
 - Configure Active Directory to enable access to the ```AWS Management Console```
 
 - Use manifest to provision the functions for ```trigger-identity-cam```
@@ -48,3 +50,5 @@ workshop $ rake process_manifest
 workshop $ rake describe_manifest_status
 
 ```
+
+- Assign roles to the groups in Active Directory
