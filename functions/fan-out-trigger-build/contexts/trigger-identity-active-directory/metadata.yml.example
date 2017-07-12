@@ -1,0 +1,11 @@
+name: trigger-identity-active-directory
+region: us-east-1
+capabilities:
+ - CAPABILITY_IAM
+Parameters:
+  EssentialsStackName: essentials
+  ControlAccount: identity
+  Purpose: active-directory
+  BuildProject: provision-cross-account
+  CapabilityIAMNeeded: true
+  RecreateStack: true

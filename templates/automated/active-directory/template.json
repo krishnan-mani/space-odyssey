@@ -20,7 +20,7 @@
       "Type": "String",
       "NoEcho": "True",
       "ConstraintDescription": "Must be between 8 and 64 characters in length, inclusive. It must also contain at least one character from three of the following four categories:Lowercase letters,Uppercase letters,Numbers,Non-alphanumeric characters",
-      "Default": "chaltaHa!"
+      "Default": "chang8MeP!ease"
     },
     "RDPLocation": {
       "Description": "The IP address range that can be used to RDP to the EC2 instances",
@@ -36,7 +36,7 @@
       "Type": "String",
       "NoEcho": "True",
       "ConstraintDescription": "Must be between 8 and 64 characters in length, inclusive. It must also contain at least one character from three of the following four categories:Lowercase letters,Uppercase letters,Numbers,Non-alphanumeric characters",
-      "Default": "chaltaHa!"
+      "Default": "chang8MeP!ease"
     }
   },
   "Mappings": {

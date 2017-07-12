@@ -1,0 +1,12 @@
+name: trigger-identity-cam
+region: us-east-1
+capabilities:
+ - CAPABILITY_IAM
+Parameters:
+  EssentialsStackName: essentials
+  ControlAccount: identity
+  Purpose: identity-cam
+  BuildProject: provision-cross-account
+  CapabilityIAMNeeded: false
+  CapabilityNamedIAMNeeded: true
+  RecreateStack: false

@@ -1,0 +1,13 @@
+name: trigger-all-CloudTrail
+region: us-east-1
+capabilities:
+ - CAPABILITY_IAM
+Parameters:
+  EssentialsStackName: essentials
+  ControlAccount: all
+  Purpose: CloudTrail
+  BuildProject: provision-cross-account
+  CapabilityIAMNeeded: false
+  CapabilityNamedIAMNeeded: false
+  RecreateStack: false
+  ExcludeAccount: none

@@ -1,0 +1,11 @@
+name: trigger-logging-CloudTrail-bucket
+region: us-east-1
+capabilities:
+  - CAPABILITY_IAM
+Parameters:
+  EssentialsStackName: essentials
+  ControlAccount: logging
+  Purpose: CloudTrail-bucket
+  BuildProject: provision-cross-account
+  CapabilityIAMNeeded: false
+

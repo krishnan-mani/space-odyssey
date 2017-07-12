@@ -1,0 +1,13 @@
+name: trigger-other-sub-account-cam
+region: us-east-1
+capabilities:
+ - CAPABILITY_IAM
+Parameters:
+  EssentialsStackName: essentials
+  ControlAccount: all
+  Purpose: sub-account-cam
+  BuildProject: provision-cross-account
+  CapabilityIAMNeeded: false
+  CapabilityNamedIAMNeeded: true
+  RecreateStack: true
+  ExcludeAccount: identity

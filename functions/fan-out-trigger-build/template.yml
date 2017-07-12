@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Publish notifications to an SNS topic to eventually trigger builds
+Resources:
+  TriggerBuildFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Timeout: 30
+      Policies:
+       - Version: '2012-10-17'
+         Statement:
+           - Effect: Allow
+             Action:
+               - 'organizations:Describe*'
+               - 'organizations:List*'
+               - 'SNS:Publish'
+             Resource: '*'
+      Environment:
+        Variables:
+          BUILD_PROJECT: !Ref BuildProject
+          CONTROL_ACCOUNT : !Ref ControlAccount
+          PURPOSE: !Ref Purpose
+          CAPABILITY_IAM_NEEDED: !Ref CapabilityIAMNeeded
+          CAPABILITY_NAMED_IAM_NEEDED: !Ref CapabilityNamedIAMNeeded
+          RECREATE_STACK: !Ref RecreateStack
+          EXCLUDE_ACCOUNT: !Ref ExcludeAccount
+          DESTINATION_TOPIC_ARN: !ImportValue
+                                             'Fn::Sub': '${EssentialsStackName}:TriggerBuildsTopicARN'
+
+      Events:
+        RecurringEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+
+Parameters:
+  EssentialsStackName:
+    Type: String
+    Default: essentials
+  ControlAccount:
+    Type: String
+  Purpose:
+    Type: String
+  BuildProject:
+    Type: String
+  CapabilityIAMNeeded:
+    Type: String
+    Default: false
+  CapabilityNamedIAMNeeded:
+     Type: String
+     Default: false
+  RecreateStack:
+    Type: String
+    Default: false
+  ExcludeAccount:
+    Type: String
+    Default: none
