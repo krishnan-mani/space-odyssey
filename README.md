@@ -12,4 +12,4 @@ organisation of files:
 - [functions](functions): Lambda functions implementing automation  
 - [executor](executor) and [build specification](buildspec.yml): code for project in CodeBuild
 
-Begin with the [overview]("doc/overview.md")
+Begin with the [overview](doc/overview.md)
