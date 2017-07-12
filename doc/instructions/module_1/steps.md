@@ -38,12 +38,11 @@ $ aws configure set region us-east-1
 $ aws ec2 describe-instances
 # output listing EC2 instances 
 
-$ rvm current
-ruby-2.4.0@workshop
-
-$ gem install bundler
-$ bundle install --binstubs
 $ cd workshop
+workshop $ rvm current
+ruby-2.4.0@workshop
+workshop $ gem install bundler
+workshop $ bundle install --binstubs
 workshop $ rake display_accounts
 # displays organization and accounts information
 
@@ -52,6 +51,7 @@ workshop $ rake display_accounts
 - Create the artifacts bucket
 
 ```
+workshop $ rake create_organization
 workshop $ rake setup
 # displays bucket name
 
