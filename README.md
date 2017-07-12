@@ -11,3 +11,5 @@ organisation of files:
   - Under [automated](templates/automated): to be provisioned by automation
 - [functions](functions): Lambda functions implementing automation  
 - [executor](executor) and [build specification](buildspec.yml): code for project in CodeBuild
+
+Begin with the [overview]("doc/overview.md")
