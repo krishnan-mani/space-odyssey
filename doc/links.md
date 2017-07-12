@@ -1,0 +1,4 @@
+- [Billing and Cost Management Permissions Reference](http://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/billing-permissions-ref.html)
+- [Cross Account Manager solution](http://docs.aws.amazon.com/solutions/latest/cross-account-manager/welcome.html)
+- [How do I manage multiple AWS accounts for security purposes?](https://aws.amazon.com/answers/account-management/aws-multi-account-security-strategy/)
+- [How do I manage multiple AWS accounts for billing purposes?](https://aws.amazon.com/answers/account-management/aws-multi-account-billing-strategy/)
