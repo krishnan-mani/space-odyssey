@@ -8,4 +8,5 @@ functions:
       - trigger-all-CloudTrail
       - trigger-identity-active-directory
       - trigger-identity-cam
+      - trigger-other-sub-account-cam
 

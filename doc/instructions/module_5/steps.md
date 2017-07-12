@@ -7,7 +7,10 @@ workshop $ rake describe_manifest_status
 
 ```
 
-- Use manifest to provision the functions for ```trigger-identity-cam``` and ```trigger-other-sub-account-cam```
+- Configure Active Directory to set the access URL
+- Configure Active Directory to enable access to the ```AWS Management Console```
+
+- Use manifest to provision the functions for ```trigger-identity-cam```
 
 ```
 workshop $ cp manifest.yml.step-7.example manifest.yml
@@ -34,5 +37,14 @@ workshop $ rake navigate["identity"]
 workshop $ rake upload_account_files
 # navigate to identity account
 # verify files were processed 
+
+```
+
+- Use manifest to provision the functions for ```trigger-other-sub-account-cam```
+
+```
+workshop $ cp manifest.yml.step-8.example manifest.yml
+workshop $ rake process_manifest
+workshop $ rake describe_manifest_status
 
 ```
