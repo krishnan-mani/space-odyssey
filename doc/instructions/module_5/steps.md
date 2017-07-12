@@ -24,7 +24,7 @@ workshop $ rake generate_accounts_file
 
 ```
 
-- Inspect the roles and policies
+- Visually inspect the roles and policies
 - Upload the accounts file, roles, and policies for Cross Account Manager
 
 ```
