@@ -1,0 +1,7 @@
+name: trigger-builds-listener
+region: us-east-1
+capabilities:
+  - CAPABILITY_IAM
+Parameters:
+  EssentialsStackName: essentials
+
