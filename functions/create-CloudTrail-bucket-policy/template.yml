@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Create bucket policy on common bucket for CloudTrail logs
+Resources:
+
+  CreateBucketPolicyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Create bucket policy on common bucket for CloudTrail logs
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Timeout: 300
+      Policies:
+       - Version: '2012-10-17'
+         Statement:
+           - Effect: Allow
+             Action:
+               - 'organizations:Describe*'
+               - 'organizations:List*'
+               - s3:PutBucketPolicy
+               - sts:AssumeRole
+             Resource: '*'
+      Events:
+        RecurringEvent:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)

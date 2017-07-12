@@ -1,0 +1,4 @@
+name: create-CloudTrail-bucket-policy
+region: us-east-1
+capabilities:
+  - CAPABILITY_IAM
