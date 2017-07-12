@@ -10,7 +10,7 @@ Alternative A: Run the steps for the workshop locally
 Alternative B: Run the steps for the workshop from an EC2 instance
 =====
    
-- Provision the [CloudFormation template]("../../../templates/bootstrap/workshop-instance/template.json") for stack ```workshop-instance```
+- Provision the CloudFormation template for stack ```workshop-instance```
 
 ```
 

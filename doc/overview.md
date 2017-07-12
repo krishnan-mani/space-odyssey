@@ -78,9 +78,9 @@ module 3: automation
 module 4: logging account (illustrated with CloudTrail)
 ===
 
-- create common bucket to receive logs, owned by "logging" account
-- ensure bucket policy allows logging from CloudTrail from multiple accounts
-- provision CloudTrail on all accounts to write logs to common bucket
+- (provision scheduled function to) create common bucket to receive logs, owned by "logging" account
+- (provision scheduled function to) ensure bucket policy allows logging by CloudTrail from multiple accounts
+- (provision scheduled function to) create CloudTrail on all accounts to write logs to common bucket
 - (optional) use Service Control Policies to restrict use of logging account
 - (optional) use CloudFormation update policy to restrict who can make changes to CloudFormation stacks
 - add new accounts, and verify that CloudTrail is enabled and logging to common bucket
@@ -92,16 +92,15 @@ module 4: logging account (illustrated with CloudTrail)
   - navigate to logging account and verify CloudTrail logs from multiple accounts are being written
   - add a new account to the organization, and verify that CloudTrail is similarly provisioned
 
-
 module 5: identity account (illustrated with Cross Account Manager)
 ===
 
-- provision Active Directory in the "identity account" (other alternatives are available)
+- (provision scheduled function to) setup Active Directory in the "identity account" (other alternatives are available)
 - enable access to the AWS Management Console via federation
 - create users and groups in Active Directory (using EC2 SSM for the workshop)
-- provision the Cross Account Manager component in the "identity account"
+- (provision scheduled function to) setup the Cross Account Manager component in the "identity account"
 - generate and copy account information, roles, and policies to Cross Account Manager
-- provision the Cross Account Manager component in all of the other accounts
+- (provision scheduled function to) setup the Cross Account Manager component in all of the other accounts
 - assign groups in Active Directory to roles
 - user access to AWS accounts for the assigned role via federation to the console
 - milestones:
