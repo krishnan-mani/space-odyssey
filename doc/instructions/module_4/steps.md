@@ -4,6 +4,11 @@
 workshop $ cp manifest.yml.step-3.example manifest.yml
 workshop $ rake process_manifest
 workshop $ rake describe_manifest_status
+workshop $ rake get_stack_build_status["trigger-logging-CloudTrail-bucket"]
+logging, CloudTrail-bucket: CREATE_COMPLETE
+
+workshop $ rake get_cf_stack_status["CloudTrail-bucket","logging"]
+logging, CloudTrail-bucket: CREATE_COMPLETE
 
 ```
 
