@@ -1,4 +1,4 @@
-Step 10: install dependencies to run workshop automation
+Install dependencies to run workshop automation
 ====
 
 Alternative A: Run the steps for the workshop locally 
@@ -12,12 +12,11 @@ Alternative B: Run the steps for the workshop from an EC2 instance
    
 - Provision the CloudFormation template for stack ```workshop-instance```
 - Ensure you have an **existing Keypair in `us-east-1` before launching this stack**
-
-While you're inside the repository folder, before launching Cloudformation stack below
-
+- Clone this repository to have access to the assets. Navigate to the repository folder, before launching Cloudformation stack below
 
 ```bash
-cd templates/bootstrap/workshop-instance/
+$ cd /my/path/to/cloned/space-odyssey
+space-odyssey $ cd templates/bootstrap/workshop-instance/
 ```
 
 ```bash
