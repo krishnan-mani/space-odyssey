@@ -35,7 +35,7 @@ Concepts and principles:
   - federation, "accountgroup"
   - Groups in Active Directory are assigned to IAM roles
 
-module 1: preparation and pre-requisites
+module 1: [preparation and pre-requisites](instructions/module_1/steps.md)
 ===
 
 - Use any AWS account
@@ -54,7 +54,7 @@ module 1: preparation and pre-requisites
   - build project in CodeBuild
   - SNS topic
 
-module 2: organization, accounts, and organizational units
+module 2: [organization, accounts, and organizational units](instructions/module_2/steps.md)
 ===
 
 - display accounts
@@ -68,14 +68,14 @@ module 2: organization, accounts, and organizational units
   - one or more "functional accounts" are created (suggestion: name them after some of planet Saturn's satellites)
   - navigate to any of the accounts from the console using the ```OrganizationAccountAccessRole```
 
-module 3: automation
+module 3: [automation](instructions/module_3/steps.md)
 ===
 
 - (provision scheduled function to) trigger builds in CodeBuild
 - milestone:
   - deployed CloudFormation stack ```trigger-builds-listener```
 
-module 4: logging account (illustrated with CloudTrail)
+module 4: [logging account (illustrated with CloudTrail)](instructions/module_4/steps.md)
 ===
 
 - (provision scheduled function to) create common bucket to receive logs, owned by "logging" account
@@ -92,7 +92,7 @@ module 4: logging account (illustrated with CloudTrail)
   - navigate to logging account and verify CloudTrail logs from multiple accounts are being written
   - add a new account to the organization, and verify that CloudTrail is similarly provisioned
 
-module 5: identity account (illustrated with Cross Account Manager)
+module 5: [identity account (illustrated with Cross Account Manager)](instructions/module_5/steps.md)
 ===
 
 - (provision scheduled function to) setup Active Directory in the "identity account" (other alternatives are available)
