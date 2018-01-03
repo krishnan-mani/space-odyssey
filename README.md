@@ -1,5 +1,4 @@
 content for the space-odyssey workshop
-IMPORTANT: Use ```us-east-1``` as the designated AWS region
 
 ![a planetary alignment of 'satellite' accounts](doc/illustrations/space-odyssey.png)
 
@@ -15,3 +14,5 @@ organisation of files:
 - [executor](executor) and [build specification](buildspec.yml): code for project in CodeBuild
 
 Begin with the [overview](doc/overview.md)
+
+(IMPORTANT: Use ```us-east-1``` as the AWS region chosen to provision resources)
