@@ -1,6 +1,7 @@
 content for the space-odyssey workshop
-
 IMPORTANT: Use ```us-east-1``` as the designated AWS region
+
+![a planetary alignment of 'satellite' accounts](doc/illustrations/space-odyssey.png)
 
 organisation of files:
 
