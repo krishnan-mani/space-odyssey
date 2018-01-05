@@ -1,0 +1,6 @@
+- implement cache to identify accounts by name (as workaround for Organizations bug in list-accounts)
+- implement automated listing of accounts for CAM
+- changes to trigger automation based on calls to Organizations APIs 
+- test for inviting accounts rather than just creating accounts
+- implement alerting mechanism on frequent failure of provisioning actions
+- any changes to implementation

@@ -68,7 +68,7 @@ rescue Aws::CloudFormation::Errors::ValidationError => ex
 end
 
 def get_template(purpose)
-  IO.read(File.join("..", "automated", purpose, "template.json"))
+  IO.read(File.join("..", "templates", "automated", purpose, "template.json"))
 end
 
 template_body = get_template(purpose)
