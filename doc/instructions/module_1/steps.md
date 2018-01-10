@@ -1,5 +1,5 @@
 Install dependencies to run workshop automation
-====
+===
 
 Alternative A: Run the steps for the workshop locally 
 =====
@@ -32,7 +32,7 @@ workshop $ bundle install --binstubs
 ```
 
 Begin the workshop
-====
+===
 
 - Display currrent accounts in the organization
 
