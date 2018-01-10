@@ -20,10 +20,12 @@ space-odyssey $ cd templates/bootstrap/workshop-instance/
 ```
 
 ```bash
-workshop-instance $ aws cloudformation create-stack \
+# Assuming public key name is MyKey
+
+$ aws cloudformation create-stack \
                             --stack-name workshop-instance \
                             --template-body file://template.json \
-                            --parameters ParameterKey=KeyName,ParameterValue=km \
+                            --parameters ParameterKey=KeyName,ParameterValue=MyKey \
                             --capabilities CAPABILITY_IAM \
                             --region us-east-1
 ```
@@ -32,24 +34,30 @@ workshop-instance $ aws cloudformation create-stack \
 - Login to the instance as the ```ec2-user```
 
 ```bash
-$ ssh -i <local_keypair_location> ec2-user@$HOST
+# Obtain public IP address for instance, say p.q.r.s
+$ ssh -i /path/to/private/key ec2-user@p.q.r.s
 
+# Change into cloned repository
 $ cd /opt/space-odyssey
 
+# Ensure you are on the right branch
 $ git branch
 * master
 
+# Configure AWS CLI to use "us-east-1"
 $ aws configure set region us-east-1
 
-$ aws ec2 describe-instances
-# output listing EC2 instances 
+# Establish that the CLI is working and has the credentials configured
+$ aws sts get-caller-identity
 
+# Change into the "workshop" folder containing the rake tasks
 $ cd workshop
 workshop $ rvm current
 ruby-2.4.0@workshop
-workshop $ gem install bundler
+workshop $ gem install bundler --no-ri --no-rdoc
 workshop $ bundle install --binstubs
 
+# Display current accounts in the organisation
 workshop $ rake display_accounts
 # displays organization and accounts information
 
