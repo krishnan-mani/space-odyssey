@@ -42,7 +42,7 @@
   "Mappings": {
     "AWSRegion2AMI": {
       "us-east-1": {
-        "Windows2012r2": "ami-271b6d31"
+        "Windows2012r2": "ami-ce792ab4"
       },
       "us-west-2": {
         "Windows2012r2": "ami-3189ec51"
