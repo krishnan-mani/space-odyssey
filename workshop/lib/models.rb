@@ -170,7 +170,7 @@ class AWSAccount
   attr_reader :id, :name, :email, :ou
 
   def to_s
-    "#{id}: #{name}"
+    "#{id}: #{name}#{email.nil? ? " (Email unavailable)" : ", email: #{email}"}"
   end
 
   def initialize(id, email, name, ou = nil)

@@ -99,6 +99,14 @@ task :create_control_accounts, [:base_email, :group] do |t, args|
   end
 end
 
+LABEL_SEPARATOR = '+'
+ACCOUNT_SEPARATOR = '-'
+
+def account_email(base_email, group, account_name)
+  mailbox, domain = base_email.split('@').first, base_email.split('@').last
+  "#{mailbox}#{LABEL_SEPARATOR}#{group}#{ACCOUNT_SEPARATOR}#{account_name}@#{domain}"
+end
+
 def create_account(account_name, base_email, group)
   raise "account name not provided" if account_name.nil?
   raise "base email not provided" if base_email.nil?
@@ -107,7 +115,7 @@ def create_account(account_name, base_email, group)
   lowercase_account_name = account_name.downcase
 
   org_client = Aws::Organizations::Client.new
-  email = "#{base_email.split('@').first}+#{group}-#{lowercase_account_name}@#{base_email.split('@').last}"
+  email = account_email(base_email, group, lowercase_account_name)
   begin
     create_account_response = org_client.create_account(account_name: lowercase_account_name, email: email)
     create_account_response.create_account_status

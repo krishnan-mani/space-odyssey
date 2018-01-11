@@ -1,3 +1,4 @@
+- display registered email address for accounts
 - implement cache to identify accounts by name (as workaround for Organizations bug in list-accounts)
 - implement automated listing of accounts for CAM
 - changes to trigger automation based on calls to Organizations APIs 

@@ -27,7 +27,7 @@ $ aws sts get-caller-identity
 # Change into the "workshop" folder containing the rake tasks
 $ cd workshop
 workshop $ rvm current
-ruby-2.4.0@workshop
+ruby-2.4.1@workshop
 workshop $ gem install bundler --no-ri --no-rdoc
 workshop $ bundle install --binstubs
 
@@ -36,7 +36,9 @@ workshop $ bundle install --binstubs
 Begin the workshop
 ===
 
-- Create the organization (assumption: the current account will be the parent account in the organization). Display currrent accounts in the organization. If the organization already exists, you will see a message listing the organization information and accounts in the organization, else you will see an Error message 
+- Create the organization (assumption: the current account will be the parent account in the organization). 
+  
+Display currrent accounts in the organization. If the organization already exists, you will see a message listing the organization information and accounts in the organization, else you will see an error message 
 
 ```bash
 # Display current accounts in the organisation
@@ -87,3 +89,5 @@ $ git remote add cc https://git-codecommit.us-east-1.amazonaws.com/v1/repos/spac
 $ git push cc master
 
 ```
+
+Move on to [module 2](../module_2/steps.md), or back up to [overview](../overview.md)
