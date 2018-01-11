@@ -81,8 +81,8 @@ module 4: [logging account (illustrated with CloudTrail)](instructions/module_4/
 - (provision scheduled function to) create common bucket to receive logs, owned by "logging" account
 - (provision scheduled function to) ensure bucket policy allows logging by CloudTrail from multiple accounts
 - (provision scheduled function to) create CloudTrail on all accounts to write logs to common bucket
-- (optional) use Service Control Policies to restrict use of logging account
-- (optional) use CloudFormation update policy to restrict who can make changes to CloudFormation stacks
+- (optional, not illustrated for now) use Service Control Policies to restrict use of logging account
+- (optional, not illustrated for now) use CloudFormation update policy to restrict who can make changes to CloudFormation stacks
 - add new accounts, and verify that CloudTrail is enabled and logging to common bucket
 - milestones:
   - deployed CloudFormation stack ```CloudTrail-bucket-on-logging```

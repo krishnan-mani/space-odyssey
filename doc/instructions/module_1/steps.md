@@ -90,3 +90,5 @@ $ git remote add cc https://git-codecommit.us-east-1.amazonaws.com/v1/repos/spac
 $ git push cc master
 
 ```
+
+Move on to [module 2](../module_2/steps.md), or back up to [overview](../overview.md)

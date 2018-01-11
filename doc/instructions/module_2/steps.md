@@ -47,3 +47,5 @@ workshop $ rake add_account_to_ou["dione","saturn"]
 workshop $ rake navigate["dione"]
 
 ```
+
+Move on to [module 3](../module_3/steps.md), or back up to [overview](../overview.md)
